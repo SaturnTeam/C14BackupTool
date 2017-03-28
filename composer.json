@@ -1,0 +1,21 @@
+{
+    "name": "thesaturn/c14-backup-tool",
+    "description": "Backup tool for cheap C14 storage provided by online.net. Support encryption, diff backups and backup rotation. Description about storage https://www.online.net/en/c14",
+    "type": "project",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "TheSaturn",
+            "email": "saturn@thesaturn.me"
+        }
+    ],
+    "minimum-stability": "stable",
+    "require": {
+        "fabiang/xmpp": "*",
+        "fool/echolog": "1.0.2",
+        "thesaturn/xmpplogger": "1.0.*"
+    },
+    "autoload": {
+        "psr-4": {"thesaturn\\C14BackupTool\\": "source/"}
+    }
+}
