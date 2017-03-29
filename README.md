@@ -9,14 +9,21 @@ Inspired by BackInTime
 
 # Requirements
 PHP >= 5.6
+
 rsync
+
 encfs (+encfstools)
+
 sshfs
+
 ssh
+
 ssh-keygen
 ### Optional dependence
 cron
+
 composer
+
 fabiang/xmpp
 
 # Installation
@@ -32,9 +39,11 @@ composer create-project thesaturn/c14-backup-tool
 cp config.example.php config.php
 ```
 # Terminology
-*C14* - Storage type
-*Safe* - Name of archives group in C14
-*Archive* - Contains your files
+*C14* — Storage type
+
+*Safe* — Name of archives group in C14
+
+*Archive* — Contains your files
 # Configuring
 All possible options described in `config.example.php`. Below some tips
 * `config.php` must return array with profiles `return [...]`
