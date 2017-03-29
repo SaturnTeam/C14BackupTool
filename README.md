@@ -76,3 +76,7 @@ Command line usage: `php /path/to/main.php profileName`
 * If all rotation options is to false, all backups will be saved.
 * If encryption enabled, exclude working with only absolute paths, regex is not available
 
+# Not implemented yet
+* Better config validation
+* Dependencies checking
+* Tests
