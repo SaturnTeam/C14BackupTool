@@ -223,11 +223,14 @@ class C14API
             $waited += $timeout;
             if ($waited > static::MAX_WAIT_TIME)
             {
-                throw new ErrorException('Cannot wait so long while new archive will be active');
+                throw new ErrorException("Cannot wait so long while new archive will be active safe: $safeUUID, archive: $archiveUUID");
             }
             $archive = $this->getArchiveDetails($safeUUID, $archiveUUID);
+            if(!isset($archive['status'])) {
+                throw new ErrorException('Very rare situation. Please provide it to the issue on github: '. static::objToStr($archive));
+            }
         } while ($archive['status'] !== 'active');
-        sleep(10);
+        sleep(10);//sometimes 'active' is not truly 'active'
         return $archive;
     }
 

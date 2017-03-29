@@ -10,9 +10,10 @@ use thesaturn\C14BackupTool\BackupHandler;
 use thesaturn\C14BackupTool\EchoLogger;
 
 $configs = include __DIR__ . '/config.php';
-$config = $configs[isset($argv[1]) ? $argv[1] : 'default'];
+$profileName = isset($argv[1]) ? $argv[1] : 'default';
+$config = $configs[$profileName];
 
-if (isset($config['xmpp']))
+if (isset($config['xmpp']) && is_array($config['xmpp']))
 {
     include_once __DIR__.'/vendor/autoload.php';
 
@@ -34,9 +35,26 @@ try
 {
     $backupManager = new BackupHandler($config, $log);
     $backupManager->doBackup();
+    return 0;
 }
-catch (Exception $e)
+catch (ErrorException $e)
 {
+    unset($backupManager);
     $log->error($e->getMessage() . "\n" . $e->getTraceAsString());
+    $log->error('Fatal error. Repeat coming soon. Profile name: '. $profileName);
+}
+try //Let's try again! C14 is not stable.
+{
+    $backupManager = new BackupHandler($config, $log);
+    $backupManager->doBackup();
+    return 0;
+}
+catch (ErrorException $e)
+{
+    unset($backupManager);
+    $log->error($e->getMessage() . "\n" . $e->getTraceAsString());
+    $log->error('Fatal error. Profile name: '. $profileName);
+    sleep(3);
     throw $e;
+    return 1;
 }

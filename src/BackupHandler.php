@@ -8,7 +8,7 @@
 
 namespace thesaturn\C14BackupTool;
 
-use \DateTime;
+use DateTime;
 use ErrorException;
 
 /**
@@ -49,7 +49,7 @@ class BackupHandler
      * Folder with all mountpoints
      * @var string
      */
-    public $allMountPointsDir = __DIR__ . '/mountpoints/';
+    public $allMountPointsDir;
 
     /**
      * Folder with all mountpoints for safe
@@ -147,6 +147,7 @@ class BackupHandler
         $this->logger = $logger;
 
         $this->safeName = $config['safeName'];
+        $this->allMountPointsDir = dirname(__DIR__) . '/mountpoints/';
         $this->mountPointsDir = $this->allMountPointsDir . $this->safeName . '/';
         $this->c14mountDir = $this->mountPointsDir . 'c14';
         $this->encryptedDir = $this->mountPointsDir . 'encrypted';
@@ -208,7 +209,7 @@ class BackupHandler
      */
     public function doBackup()
     {
-        $this->logger->info('Backup started');
+        $this->logger->info('Backup started for safe '. $this->safeName);
         $this->logger->debug('Get archive for backup');
         $archive = $this->c14->getArchiveForBackupBySafeName($this->safeName);
         $this->logger->debug('Archive for backup is ' . static::objToStr($archive));
@@ -221,9 +222,12 @@ class BackupHandler
         }
         $this->createHardLinksFromLastBackup();
         $this->makeBackup($sshInfo);
+        if(!is_dir($this->c14mountDir . '/' . static::BACKUP_TEMP_DIR)) {
+            $this->mountC14Storage();// sometimes it is helpful
+        }
         $this->renameTempFolder();
         $this->writeBackupInfoToC14($archive, (new DateTime('now'))->format(static::BACKUP_FOLDER_FORMAT));
-        sleep(1);
+        sleep(1);//wait a little while description will be updated
         $archive = $this->c14->getArchiveForBackupBySafeName($this->safeName);
         $this->logger->info('Backup success. Backups in last archive '
             . static::objToStr($archive['description']));
@@ -252,7 +256,7 @@ class BackupHandler
                 return true;
             }
         }
-        throw new ErrorException('Error in mounting c14 folder. sshfs output' . static::objToStr($output));
+        throw new ErrorException('Error in mounting c14 folder. cmd: '.$cmd.'sshfs output' . static::objToStr($output));
     }
 
     /**
@@ -336,12 +340,13 @@ class BackupHandler
                     throw new ErrorException('Cannot create encrypted view of root '
                         . static::objToStr(compact('stdout', 'stderr')));
                 }
-                if (!copy('.encfs6.xml', $this->encfsConfigLocalFile))
+                if (!copy(__DIR__.'/.encfs6.xml', $this->encfsConfigLocalFile))
                 {
                     throw new ErrorException('Cannot copy encfs config to local device ' . $this->encfsConfigLocalFile);
                 }
+                unlink(__DIR__.'/.encfs6.xml');
                 $cmd = 'fusermount -u ' . escapeshellarg($deleteDir).' 2>&1';
-                $this->logger->info('Unmount temp new encfs encrypted folder: ' . $cmd);
+                $this->logger->debug('Unmount temp new encfs encrypted folder: ' . $cmd);
                 exec($cmd, $out, $return_code);
                 if ($return_code !== 0)
                 {
@@ -356,7 +361,7 @@ class BackupHandler
             $out,
             $returnCode
         );
-        if ($returnCode !== 0 && $returnCode !== 139 && $returnCode !== 1)
+        if ($returnCode !== 0 && $returnCode !== 139)
         {
             throw new ErrorException('Cannot make encrypted view of root. Exit code ' . $returnCode
                 . static::objToStr($out));
@@ -440,7 +445,7 @@ class BackupHandler
      */
     public function makeBackup(SSHInfo $ssh)
     {
-        $this->logger->info('YAY! The real backuping is coming!');
+        $this->logger->info('YAY! The real backuping is starting!');
         $cmd = "rsync -e 'ssh -p {$ssh->port}' " . $this->rsyncOptions;
         foreach ($this->exclude as $item)
         {

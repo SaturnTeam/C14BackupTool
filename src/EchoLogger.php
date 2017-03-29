@@ -9,6 +9,22 @@
 
 namespace thesaturn\C14BackupTool;
 
+/**
+ * Copy paste from psr
+ * Class LogLevel
+ * @package thesaturn\C14BackupTool
+ */
+class LogLevel
+{
+    const EMERGENCY = 'emergency';
+    const ALERT = 'alert';
+    const CRITICAL = 'critical';
+    const ERROR = 'error';
+    const WARNING = 'warning';
+    const NOTICE = 'notice';
+    const INFO = 'info';
+    const DEBUG = 'debug';
+}
 
 /**
  * Logs using echo
@@ -30,14 +46,14 @@ class EchoLogger
      * @var int[]
      */
     protected static $rankings = [
-        'debug'     => 7,
-        'info'      => 6,
-        'notice'    => 5,
-        'warning'   => 4,
-        'error'     => 3,
-        'critical'  => 2,
-        'alert'     => 1,
-        'emergency' => 0,
+        LogLevel::DEBUG     => 7,
+        LogLevel::INFO      => 6,
+        LogLevel::NOTICE    => 5,
+        LogLevel::WARNING   => 4,
+        LogLevel::ERROR     => 3,
+        LogLevel::CRITICAL  => 2,
+        LogLevel::ALERT     => 1,
+        LogLevel::EMERGENCY => 0,
     ];
 
     /**
