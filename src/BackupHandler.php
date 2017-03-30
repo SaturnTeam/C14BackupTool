@@ -593,11 +593,9 @@ class BackupHandler
     {
         $this->logger->debug('Unmount folders');
         exec('fusermount -u ' . escapeshellarg($this->c14mountDir).' 2>&1');
-        $this->rmdir($this->c14mountDir);
         if ($this->encryption)
         {
             exec('fusermount -u ' . escapeshellarg($this->encryptedDir).' 2>&1');
-            $this->rmdir($this->encryptedDir);
         }
     }
 }
