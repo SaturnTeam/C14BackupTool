@@ -80,3 +80,20 @@ Command line usage: `php /path/to/main.php profileName`
 * Better config validation
 * Dependencies checking
 * Tests
+
+# Algorithm
+1. Send a message about backup starting "Backup started for safe"
+2. Find a safe with safe name (set up in config)
+3. Find an archive in the safe to store backups
+4. Create necessary folders
+5. Mount encfs (encrypted view of the root FS)
+6. Encrypt included and excluded file names (for rsync)
+7. Mount the archive (sshfs)
+8. Clean up backup_temp folder (if last backup was unsuccessful)
+9. Copy hard links from the last backup folder
+10. Send the message "YAY! The real backuping is starting!"
+11. rsync
+12. rename backup_temp to C14ABT/$date
+13. Write date of successful backup to description of the archive
+14. Send "Backup success."
+15. Unmount sshfs and encfs
