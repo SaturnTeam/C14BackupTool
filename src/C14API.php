@@ -160,9 +160,7 @@ class C14API
      */
     public function createSafe($safeName)
     {
-        $answer = $this->sendC14Query('POST', 'safe', ['name' => $safeName, 'description' => 'For automated backups']);
-        sleep(5);
-        return $answer;
+        return $this->sendC14Query('POST', 'safe', ['name' => $safeName, 'description' => 'For automated backups']);
     }
 
     /**
@@ -171,15 +169,19 @@ class C14API
      */
     public function getOrCreateSafeUUID($safeName)
     {
-        $safeList = $this->getSafe();
-        foreach ($safeList as $item)
+        for($i = 0; $i < 50; $i++)
         {
-            if ($item['name'] === $safeName)
+            $safeList = $this->getSafe();
+            foreach ($safeList as $item)
             {
-                return $item['uuid_ref'];
+                if ($item['name'] === $safeName)
+                {
+                    return $item['uuid_ref'];
+                }
             }
+            $this->createSafe($safeName);
+            sleep(1);
         }
-        return $this->createSafe($safeName)['uuid_ref'];
     }
 
     /**
