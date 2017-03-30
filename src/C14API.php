@@ -160,7 +160,9 @@ class C14API
      */
     public function createSafe($safeName)
     {
-        return $this->sendC14Query('POST', 'safe', ['name' => $safeName, 'description' => 'For automated backups']);
+        $answer = $this->sendC14Query('POST', 'safe', ['name' => $safeName, 'description' => 'For automated backups']);
+        sleep(5);
+        return $answer;
     }
 
     /**
@@ -205,7 +207,6 @@ class C14API
                 if ($archive['status'] === 'active' && isset($archive['bucket']['archival_date']))
                 {
                     $date = new DateTime($archive['bucket']['archival_date']);
-                    //var_dump($archive);
                     $date->setTimezone((new DateTime())->getTimezone());
                     if ($date->diff(new DateTime(), true)->d > 0)
                     {

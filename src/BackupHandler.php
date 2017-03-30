@@ -355,16 +355,16 @@ class BackupHandler
                 $this->rmdir($deleteDir);
             }
         }
-        exec('ENCFS6_CONFIG=' . escapeshellarg($this->encfsConfigLocalFile)
-            . ' encfs --reverse / ' . escapeshellarg($this->encryptedDir)
-            . ' --extpass "echo ' . escapeshellarg($this->encryptionPassword) . '" 2>&1',
+        $cmd = 'ENCFS6_CONFIG=' . escapeshellarg($this->encfsConfigLocalFile)
+            . ' encfs --reverse / ' . escapeshellarg($this->encryptedDir);
+        exec($cmd. ' --extpass "echo ' . escapeshellarg($this->encryptionPassword) . '" 2>&1',
             $out,
             $returnCode
         );
         if ($returnCode !== 0 && $returnCode !== 139)
         {
-            throw new ErrorException('Cannot make encrypted view of root. Exit code ' . $returnCode
-                . static::objToStr($out));
+            throw new ErrorException("Cannot make encrypted view of root. 
+            Command: $cmd Exit code $returnCode". static::objToStr($out));
         }
         if (!copy($this->encfsConfigLocalFile, $this->encfsConfigRemoteFile))
         {
