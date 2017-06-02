@@ -251,7 +251,7 @@ class BackupHandler
         {
             exec($cmd, $output, $returnCode);
             sleep(1);//yep, i's necessary
-            if ($returnCode === 0)
+            if ($returnCode === 0 || isset($output[count($output)-2]) && $output[count($output)-2] == 'fuse: mountpoint is not empty')
             {
                 return true;
             }
@@ -267,27 +267,9 @@ class BackupHandler
         $backupDir = $this->c14mountDir . '/' . static::BACKUP_DIR;
         $this->mkdirOrDie($backupDir);
         $backupTempDir = $this->c14mountDir . '/' . static::BACKUP_TEMP_DIR;
-        if (is_dir($backupTempDir))
-        {
-            $this->clearFolder($backupTempDir);
-        }
         $this->mkdirOrDie($backupTempDir);
     }
 
-    /**
-     * Clear folder (used to remove files from unsuccessful backup
-     * @param $dir string
-     * @throws ErrorException
-     */
-    public function clearFolder($dir)
-    {
-        $this->logger->debug("Clear folder $dir");
-        exec('rm -r ' . escapeshellarg($dir) . '/ 2>&1', $_, $returnCode);
-        if ($returnCode !== 0)
-        {
-            throw new ErrorException('Cannot clear folder ' . $dir);
-        }
-    }
 
     /**
      * Mount encrypted view. If there isn't encfs config file, trying to copy it from storage.
