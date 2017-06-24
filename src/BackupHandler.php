@@ -251,7 +251,7 @@ class BackupHandler
         {
             exec($cmd, $output, $returnCode);
             sleep(1);//yep, i's necessary
-            if ($returnCode === 0 || isset($output[count($output)-2]) && $output[count($output)-2] === 'fuse: mountpoint is not empty')
+            if ($returnCode === 0 || in_array('fuse: mountpoint is not empty', $output))
             {
                 return true;
             }
