@@ -317,10 +317,12 @@ class BackupHandler
                 fclose($pipes[1]);
                 fclose($pipes[2]);
                 $returnCode = proc_close($process);
-                if ($returnCode !== 0 && is_array($stdout) && isset($stdout[0]) && $stdout[0] !== 'fuse: mountpoint is not empty')
+                if ($returnCode !== 0 )
                 {
-                    throw new ErrorException('Cannot create encrypted view of root '
-                        . static::objToStr(compact('stdout', 'stderr')));
+                    if(!is_array($stdout) || !isset($stdout[0]) || $stdout[0] !== 'fuse: mountpoint is not empty'){
+                        throw new ErrorException('Cannot create encrypted view of root '
+                            . static::objToStr(compact('stdout', 'stderr')));
+                    }
                 }
                 if (!copy(__DIR__.'/.encfs6.xml', $this->encfsConfigLocalFile))
                 {
