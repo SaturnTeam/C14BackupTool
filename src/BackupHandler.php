@@ -413,10 +413,6 @@ class BackupHandler
         {
             $cmd = 'cp -al ' . escapeshellarg($this->c14mountDir . '/' . static::BACKUP_DIR . '/' . $lastSuccessfulBackupDir->format(static::BACKUP_FOLDER_FORMAT) . '/.') . ' ' . escapeshellarg($this->c14mountDir . '/' . static::BACKUP_TEMP_DIR . '/').' 2>&1';
             exec($cmd, $out, $return);
-            if ($return !== 0)
-            {
-                throw new  ErrorException('Copy failed. Command: ' . $cmd . static::objToStr($out));
-            }
             return $lastSuccessfulBackupDir->format(static::BACKUP_FOLDER_FORMAT);
         }
         return false;
