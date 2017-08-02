@@ -27,7 +27,7 @@ class BackupHandler
     /**
      * Folder for creating backup. After successful backup files will be moved to its place
      */
-    const BACKUP_TEMP_DIR = 'backup_temp';
+    public $backupTempDir = '';
 
     /**
      * Folder name template
@@ -98,6 +98,11 @@ class BackupHandler
      */
     public $c14mountDir = '';
 
+    /**
+     * If there are many files in folders, it is better to turn off continuous backups
+     * @var bool
+     */
+    public $incremental = true;
 
     /**
      * Mountpoint of encrypted view
@@ -146,6 +151,9 @@ class BackupHandler
     {
         $this->logger = $logger;
 
+        $this->backupTempDir = 'backup_temp_' . mt_rand();
+
+        $this->incremental = @$config['incremental'] === true;
         $this->safeName = $config['safeName'];
         $this->allMountPointsDir = dirname(__DIR__) . '/mountpoints/';
         $this->mountPointsDir = $this->allMountPointsDir . $this->safeName . '/';
@@ -209,7 +217,7 @@ class BackupHandler
      */
     public function doBackup()
     {
-        $this->logger->info('Backup started for safe '. $this->safeName);
+        $this->logger->info('Backup started for safe ' . $this->safeName);
         $this->logger->debug('Get archive for backup');
         $archive = $this->c14->getArchiveForBackupBySafeName($this->safeName);
         $this->logger->debug('Archive for backup is ' . static::objToStr($archive));
@@ -220,9 +228,13 @@ class BackupHandler
         {
             $this->enableEncryption();
         }
-        $this->createHardLinksFromLastBackup();
+        if ($this->incremental)
+        {
+            $this->createHardLinksFromLastBackup();
+        }
         $this->makeBackup($sshInfo);
-        if(!is_dir($this->c14mountDir . '/' . static::BACKUP_TEMP_DIR)) {
+        if (!is_dir($this->c14mountDir . '/' . $this->backupTempDir))
+        {
             $this->mountC14Storage();// sometimes it is helpful
         }
         $this->renameTempFolder();
@@ -256,7 +268,7 @@ class BackupHandler
                 return true;
             }
         }
-        throw new ErrorException('Error in mounting c14 folder. cmd: '.$cmd.'sshfs output' . static::objToStr($output));
+        throw new ErrorException('Error in mounting c14 folder. cmd: ' . $cmd . 'sshfs output' . static::objToStr($output));
     }
 
     /**
@@ -266,7 +278,7 @@ class BackupHandler
     {
         $backupDir = $this->c14mountDir . '/' . static::BACKUP_DIR;
         $this->mkdirOrDie($backupDir);
-        $backupTempDir = $this->c14mountDir . '/' . static::BACKUP_TEMP_DIR;
+        $backupTempDir = $this->c14mountDir . '/' . $this->backupTempDir;
         $this->mkdirOrDie($backupTempDir);
     }
 
@@ -317,19 +329,20 @@ class BackupHandler
                 fclose($pipes[1]);
                 fclose($pipes[2]);
                 $returnCode = proc_close($process);
-                if ($returnCode !== 0 )
+                if ($returnCode !== 0)
                 {
-                    if(!is_array($stdout) || !isset($stdout[0]) || $stdout[0] !== 'fuse: mountpoint is not empty'){
+                    if (!is_array($stdout) || !isset($stdout[0]) || $stdout[0] !== 'fuse: mountpoint is not empty')
+                    {
                         throw new ErrorException('Cannot create encrypted view of root '
                             . static::objToStr(compact('stdout', 'stderr')));
                     }
                 }
-                if (!copy(__DIR__.'/.encfs6.xml', $this->encfsConfigLocalFile))
+                if (!copy(__DIR__ . '/.encfs6.xml', $this->encfsConfigLocalFile))
                 {
                     throw new ErrorException('Cannot copy encfs config to local device ' . $this->encfsConfigLocalFile);
                 }
-                unlink(__DIR__.'/.encfs6.xml');
-                $cmd = 'fusermount -u ' . escapeshellarg($deleteDir).' 2>&1';
+                unlink(__DIR__ . '/.encfs6.xml');
+                $cmd = 'fusermount -u ' . escapeshellarg($deleteDir) . ' 2>&1';
                 $this->logger->debug('Unmount temp new encfs encrypted folder: ' . $cmd);
                 exec($cmd, $out, $return_code);
                 if ($return_code !== 0)
@@ -341,14 +354,17 @@ class BackupHandler
         }
         $cmd = 'ENCFS6_CONFIG=' . escapeshellarg($this->encfsConfigLocalFile)
             . ' encfs --reverse / ' . escapeshellarg($this->encryptedDir);
-        exec($cmd. ' --extpass "echo ' . escapeshellarg($this->encryptionPassword) . '" 2>&1',
-            $out,
+        exec($cmd . ' --extpass "echo ' . escapeshellarg($this->encryptionPassword) . '" 2>&1',
+            $stdout,
             $returnCode
         );
         if ($returnCode !== 0 && $returnCode !== 139)
         {
-            throw new ErrorException("Cannot make encrypted view of root. 
-            Command: $cmd Exit code $returnCode". static::objToStr($out));
+            if (!is_array($stdout) || !isset($stdout[0]) || $stdout[0] !== 'fuse: mountpoint is not empty')
+            {
+                throw new ErrorException("Cannot make encrypted view of root. 
+            Command: $cmd Exit code $returnCode" . static::objToStr($stdout));
+            }
         }
         if (!copy($this->encfsConfigLocalFile, $this->encfsConfigRemoteFile))
         {
@@ -411,7 +427,7 @@ class BackupHandler
         }
         if ($lastSuccessfulBackupDir->format(static::BACKUP_FOLDER_FORMAT) !== (new DateTime('@0'))->format(static::BACKUP_FOLDER_FORMAT))
         {
-            $cmd = 'cp -al ' . escapeshellarg($this->c14mountDir . '/' . static::BACKUP_DIR . '/' . $lastSuccessfulBackupDir->format(static::BACKUP_FOLDER_FORMAT) . '/.') . ' ' . escapeshellarg($this->c14mountDir . '/' . static::BACKUP_TEMP_DIR . '/').' 2>&1';
+            $cmd = 'cp -al ' . escapeshellarg($this->c14mountDir . '/' . static::BACKUP_DIR . '/' . $lastSuccessfulBackupDir->format(static::BACKUP_FOLDER_FORMAT) . '/.') . ' ' . escapeshellarg($this->c14mountDir . '/' . $this->backupTempDir . '/') . ' 2>&1';
             exec($cmd, $out, $return);
             return $lastSuccessfulBackupDir->format(static::BACKUP_FOLDER_FORMAT);
         }
@@ -435,7 +451,7 @@ class BackupHandler
         {
             $cmd .= ' ' . escapeshellarg($item);
         }
-        $cmd .= ' ' . $ssh->user . '@' . $ssh->host . ':/buffer/' . static::BACKUP_TEMP_DIR.' 2>&1';
+        $cmd .= ' ' . $ssh->user . '@' . $ssh->host . ':/buffer/' . $this->backupTempDir . ' 2>&1';
         for ($i = 0; $i < static::$attempts; $i++)
         {
             exec($cmd, $out, $returnCode);
@@ -455,9 +471,9 @@ class BackupHandler
     public function renameTempFolder()
     {
         $backupDir = $this->c14mountDir . '/' . static::BACKUP_DIR;
-        $backupTempDir = $this->c14mountDir . '/' . static::BACKUP_TEMP_DIR;
+        $backupTempDir = $this->c14mountDir . '/' . $this->backupTempDir;
         $newDirName = (new DateTime('now'))->format(static::BACKUP_FOLDER_FORMAT);
-        $cmd = 'mv ' . escapeshellarg($backupTempDir) . ' ' . escapeshellarg($backupDir . '/' . $newDirName).' 2>&1';
+        $cmd = 'mv ' . escapeshellarg($backupTempDir) . ' ' . escapeshellarg($backupDir . '/' . $newDirName) . ' 2>&1';
         exec($cmd, $out, $returnCode);
         if ($returnCode !== 0)
         {
@@ -483,7 +499,8 @@ class BackupHandler
      */
     public function backupRotate()
     {
-        if(count($this->backupRotationOptions) === 0) {
+        if (count($this->backupRotationOptions) === 0)
+        {
             return;//keep all backups
         }
         $this->logger->debug('Backup rotate started');
@@ -572,10 +589,10 @@ class BackupHandler
     public function unmount()
     {
         $this->logger->debug('Unmount folders');
-        exec('fusermount -u ' . escapeshellarg($this->c14mountDir).' 2>&1');
+        exec('fusermount -u ' . escapeshellarg($this->c14mountDir) . ' 2>&1');
         if ($this->encryption)
         {
-            exec('fusermount -u ' . escapeshellarg($this->encryptedDir).' 2>&1');
+            exec('fusermount -u ' . escapeshellarg($this->encryptedDir) . ' 2>&1');
         }
     }
 }
