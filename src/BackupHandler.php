@@ -233,10 +233,7 @@ class BackupHandler
             $this->createHardLinksFromLastBackup();
         }
         $this->makeBackup($sshInfo);
-        if (!is_dir($this->c14mountDir . '/' . $this->backupTempDir))
-        {
-            $this->mountC14Storage();// sometimes it is helpful
-        }
+        $this->mountC14Storage($sshInfo);// sometimes it is helpful
         $this->renameTempFolder();
         $this->writeBackupInfoToC14($archive, (new DateTime('now'))->format(static::BACKUP_FOLDER_FORMAT));
         sleep(1);//wait a little while description will be updated
