@@ -260,7 +260,7 @@ class BackupHandler
         {
             exec($cmd, $output, $returnCode);
             sleep(1);//yep, i's necessary
-            if ($returnCode === 0 || in_array('fuse: mountpoint is not empty', $output))
+            if ($returnCode === 0 || in_array('fuse: mountpoint is not empty', $output) || substr($output[0], strlen('fusermount3: failed to access mountpoint') === 'fusermount3: failed to access mountpoint'))
             {
                 return true;
             }
